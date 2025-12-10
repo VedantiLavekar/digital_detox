@@ -2,8 +2,6 @@ name: digital_detox
 description: "A digital detox app to help users manage screen time and promote healthy digital habits."
 publish_to: 'none'
 version: 1.0.0+1
-homepage: https://github.com/vedikalohiya/digital_detox
-repository: https://github.com/vedikalohiya/digital_detox
 
 environment:
   sdk: ^3.9.2
