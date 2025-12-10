@@ -1,0 +1,43 @@
+name: digital_detox
+description: "A digital detox app to help users manage screen time and promote healthy digital habits."
+publish_to: 'none'
+version: 1.0.0+1
+homepage: https://github.com/vedikalohiya/digital_detox
+repository: https://github.com/vedikalohiya/digital_detox
+
+environment:
+  sdk: ^3.9.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  sqflite_common_ffi: ^2.3.0 
+  lottie: ^3.3.2
+  intl: ^0.20.2
+  shared_preferences: ^2.2.2
+  firebase_core: ^4.1.1
+  firebase_auth: ^6.1.0
+  cloud_firestore: ^6.0.2
+  sqflite: ^2.3.0
+  path: ^1.8.0
+  crypto: ^3.0.3
+  http: ^1.2.0
+  qr_flutter: ^4.1.0
+  share_plus: ^7.2.2
+  audioplayers: ^5.2.1
+  flutter_local_notifications: ^17.2.3
+  permission_handler: ^11.0.0
+  usage_stats: ^1.3.1
+  just_audio: ^0.9.34
+  flutter_overlay_window: ^0.5.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/animations/
+    - assets/sounds/
