@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'parent_pin_service.dart';
+import 'kids_alarm_service.dart';
 
 class KidsOverlayService {
   static final KidsOverlayService _instance = KidsOverlayService._internal();
@@ -28,7 +30,7 @@ class KidsOverlayService {
     }
   }
 
-  Future<void> showBlockingOverlay() async {
+  Future<void> showBlockingOverlay({bool shouldPlayAlarm = false}) async {
     if (_isOverlayActive) return;
     try {
       final hasPermission = await hasOverlayPermission().timeout(
@@ -36,6 +38,11 @@ class KidsOverlayService {
         onTimeout: () => false,
       );
       if (!hasPermission && !await requestOverlayPermission()) return;
+
+      // Send alarm flag to overlay isolate using shareData
+      // This is the correct way to communicate between isolates
+      print('🔔 Sending alarm flag to overlay: $shouldPlayAlarm');
+      await FlutterOverlayWindow.shareData({'shouldPlayAlarm': shouldPlayAlarm});
 
       await FlutterOverlayWindow.showOverlay(
         enableDrag: false,
@@ -47,7 +54,9 @@ class KidsOverlayService {
         width: WindowSize.matchParent,
       );
       _isOverlayActive = true;
-    } catch (e) {}
+    } catch (e) {
+      print('❌ Error showing overlay: $e');
+    }
   }
 
   Future<void> closeOverlay() async {
@@ -86,6 +95,7 @@ class _KidsOverlayBlockingScreenState extends State<KidsOverlayBlockingScreen>
   final _pinController = TextEditingController();
   bool _pinError = false, _alarmPlaying = true;
   late AnimationController _pulseController, _flashController;
+  StreamSubscription? _overlayListener;
 
   @override
   void initState() {
@@ -98,19 +108,47 @@ class _KidsOverlayBlockingScreenState extends State<KidsOverlayBlockingScreen>
       vsync: this,
       duration: Duration(milliseconds: 300),
     )..repeat(reverse: true);
+    
+    // Listen for data from main app isolate
+    _overlayListener = FlutterOverlayWindow.overlayListener.listen((data) {
+      print('🔔 Overlay received data: $data');
+      if (data is Map && data.containsKey('shouldPlayAlarm')) {
+        final shouldPlayAlarm = data['shouldPlayAlarm'] as bool;
+        print('🔔 Should play alarm: $shouldPlayAlarm');
+        
+        if (shouldPlayAlarm && mounted) {
+          // Play alarm only on fresh timer expiry
+          print('🔊 Starting alarm...');
+          KidsAlarmService().playAlarm();
+        } else {
+          // Don't play alarm, skip to PIN entry screen
+          print('🔇 Skipping alarm, going to PIN entry');
+          if (mounted) {
+            setState(() => _alarmPlaying = false);
+          }
+        }
+      }
+    });
+    
     Future.delayed(Duration(seconds: 8), () {
       if (mounted) {
         _flashController.duration = Duration(milliseconds: 800);
         setState(() => _alarmPlaying = false);
+        // Stop alarm after 8 seconds
+        KidsAlarmService().stopAlarm();
       }
     });
   }
 
+
   @override
   void dispose() {
+    _overlayListener?.cancel();
     _pulseController.dispose();
     _flashController.dispose();
     _pinController.dispose();
+    // Stop alarm when overlay is disposed
+    KidsAlarmService().stopAlarm();
     super.dispose();
   }
 
@@ -125,6 +163,9 @@ class _KidsOverlayBlockingScreenState extends State<KidsOverlayBlockingScreen>
       print('🔐 Verifying PIN in overlay...');
       if (await _pinService.verifyPin(pin, isOverlay: true)) {
         print('✅ PIN verified! Stopping Kids Mode...');
+
+        // Stop alarm
+        await KidsAlarmService().stopAlarm();
 
         // Signal main app to stop Kids Mode
         final prefs = await SharedPreferences.getInstance();
@@ -164,6 +205,8 @@ class _KidsOverlayBlockingScreenState extends State<KidsOverlayBlockingScreen>
       print('🔐 Verifying PIN for add time...');
       if (await _pinService.verifyPin(pin, isOverlay: true)) {
         print('✅ PIN verified! Adding 15 minutes and closing overlay...');
+        // Stop alarm
+        await KidsAlarmService().stopAlarm();
         // TODO: Add time functionality - for now just close overlay
         await FlutterOverlayWindow.closeOverlay();
         print('✅ Overlay closed successfully');

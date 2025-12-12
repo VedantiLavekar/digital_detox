@@ -21,7 +21,7 @@ class KidsAlarmService {
       try {
         await _audioPlayer.setVolume(1.0);
         await _audioPlayer.setReleaseMode(ReleaseMode.loop);
-        await _audioPlayer.play(AssetSource('sounds/alarm.mp3'), volume: 1.0);
+        await _audioPlayer.play(AssetSource('sounds/alarm_alert.mp3.mp3'), volume: 1.0);
         print('🔔 Alarm sound started from assets');
       } catch (assetError) {
         print('⚠️ Asset alarm not found: $assetError');

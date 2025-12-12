@@ -95,9 +95,9 @@ class KidsModeService extends ChangeNotifier {
         print('⏰ Kids Mode timer expired while app was closed');
         _remainingSeconds = 0;
 
-        // Show overlay since timer actually expired
+        // Show overlay WITHOUT alarm since this is not a fresh expiry
         _overlayService ??= KidsOverlayService();
-        await _overlayService!.showBlockingOverlay();
+        await _overlayService!.showBlockingOverlay(shouldPlayAlarm: false);
 
         onTimerExpired?.call();
         notifyListeners();
@@ -202,11 +202,11 @@ class KidsModeService extends ChangeNotifier {
     if (_countdownTimer != null || _isActive) {
       print('🚀 Attempting to show blocking overlay...');
 
-      // Show system-wide overlay
+      // Show system-wide overlay WITH alarm for fresh timer expiry
       _overlayService ??= KidsOverlayService();
 
       try {
-        await _overlayService!.showBlockingOverlay();
+        await _overlayService!.showBlockingOverlay(shouldPlayAlarm: true);
         print('✅ Overlay shown successfully');
       } catch (e) {
         print('❌ Error showing overlay: $e');
